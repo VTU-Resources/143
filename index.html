@@ -83,7 +83,7 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+        const { useState, useEffect, useRef, useCallback } = React;
         const { motion, AnimatePresence } = window.Motion;
 
         // --- Configuration ---
@@ -901,6 +901,19 @@
             const [currentTab, setCurrentTab] = useState('splash');
             const [isPlaying, setIsPlaying] = useState(false);
             const audioRef = useRef(null);
+            
+            // Refs for constrained confetti
+            const confettiInstance = useRef(null);
+
+            // Callback ref to initialize confetti when canvas mounts
+            const setConfettiCanvas = useCallback((node) => {
+                if (node !== null && !confettiInstance.current) {
+                    confettiInstance.current = confetti.create(node, {
+                        resize: true,
+                        useWorker: false // Disable worker to prevent blob issues
+                    });
+                }
+            }, []);
 
             const toggleMusic = () => {
                 if (audioRef.current) {
@@ -930,27 +943,30 @@
                 setCurrentTab('empireEntry');
             };
 
-            // Global Confetti Effect - Triggered on EVERY tab change
+            // Global Confetti Effect - Triggered on EVERY tab change using constrained canvas
             useEffect(() => {
                 const duration = 2000; 
                 const end = Date.now() + duration;
 
                 const frame = () => {
-                    confetti({
-                        particleCount: 5,
-                        angle: 60,
-                        spread: 55,
-                        origin: { x: 0 },
-                        colors: ['#FFD700', '#FFFFFF', '#FFA500']
-                    });
-                    
-                    confetti({
-                        particleCount: 5,
-                        angle: 120,
-                        spread: 55,
-                        origin: { x: 1 },
-                        colors: ['#FFD700', '#FFFFFF', '#FFA500']
-                    });
+                    // Safety check if instance is ready
+                    if (confettiInstance.current) {
+                        confettiInstance.current({
+                            particleCount: 5,
+                            angle: 60,
+                            spread: 55,
+                            origin: { x: 0 },
+                            colors: ['#FFD700', '#FFFFFF', '#FFA500']
+                        });
+                        
+                        confettiInstance.current({
+                            particleCount: 5,
+                            angle: 120,
+                            spread: 55,
+                            origin: { x: 1 },
+                            colors: ['#FFD700', '#FFFFFF', '#FFA500']
+                        });
+                    }
 
                     if (Date.now() < end) {
                         requestAnimationFrame(frame);
@@ -977,6 +993,12 @@
                     )}
 
                     <main className="relative z-10 w-full h-full max-w-md mx-auto bg-white/0 md:shadow-2xl md:border-x border-white/50">
+                        {/* Constrained Confetti Canvas */}
+                        <canvas 
+                            ref={setConfettiCanvas} 
+                            className="absolute inset-0 pointer-events-none z-50 w-full h-full"
+                        />
+
                         <AnimatePresence mode='wait'>
                             {currentTab === 'splash' && (
                                 <motion.div key="splash" className="h-full" exit={{ opacity: 0 }}>
