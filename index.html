@@ -129,7 +129,7 @@
         );
 
         const Heart = (props) => <IconWrapper {...props}><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></IconWrapper>;
-        const Sparkles = (props) => <IconWrapper {...props}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M9 5H5"/><path d="M19 14v4"/><path d="M23 16h-4"/></IconWrapper>;
+        const Sparkles = (props) => <IconWrapper {...props}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M9 5H5"/><path d="M19 14v4"/><path d="M23 16h-4"/></IconWrapper>;
         const ImageIcon = (props) => <IconWrapper {...props}><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></IconWrapper>;
         const InfinityIcon = (props) => <IconWrapper {...props}><path d="M12 12c-2-2.67-4-4-6-4a4 4 0 1 0 0 8c2 0 4-1.33 6-4Zm0 0c2 2.67 4 4 6 4a4 4 0 1 0 0-8c-2 0-4 1.33-6 4Z"/></IconWrapper>;
         const Crown = (props) => <IconWrapper {...props}><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></IconWrapper>;
@@ -307,13 +307,15 @@
             const lastTapRef = useRef(0);
             const tapCountRef = useRef(0);
 
-            // SECRET LOGIC: 3 Taps within 500ms of each other trigger skipping
+            // SECRET LOGIC: 3 Taps within 600ms of each other trigger skipping
+            // UPDATED: Using a slightly longer timeout and safe handling
             const handleSecretTap = (e) => {
-                e.stopPropagation(); // Prevent affecting other clicks
+                // e.stopPropagation(); // Optional, but usually better to let it bubble if needed
+                
                 const now = Date.now();
                 
-                // If the last tap was less than 500ms ago, increment count
-                if (now - lastTapRef.current < 500) {
+                // If the last tap was less than 600ms ago, increment count
+                if (now - lastTapRef.current < 600) {
                     tapCountRef.current += 1;
                 } else {
                     // Reset if too slow
@@ -377,12 +379,13 @@
                 </motion.div>
                 
                 {/* THIS IS THE MARKED PLACE FOR SECRET TAP */}
+                {/* UPDATED: Added touch-manipulation and onPointerDown for instant mobile response */}
                 <motion.div 
                     initial={{ y: -50, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.8, duration: 0.6, type: "spring" }}
-                    className="mb-4 relative z-30 cursor-pointer select-none"
-                    onClick={handleSecretTap} 
+                    className="mb-4 relative z-30 cursor-pointer select-none touch-manipulation"
+                    onPointerDown={handleSecretTap} 
                 >
                     <h1 className="font-playfair text-4xl md:text-5xl font-bold tracking-tight mb-2 pointer-events-none">
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#996515] via-[#D4AF37] to-[#996515] drop-shadow-sm">Happy New Year</span>
