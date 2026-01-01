@@ -84,7 +84,6 @@
 
     <script type="text/babel">
         const { useState, useEffect, useRef, useCallback } = React;
-        // Fix: Safely access Motion, falling back if not immediately available
         const { motion, AnimatePresence } = window.Motion || window.framerMotion || {};
 
         if (!motion) {
@@ -94,8 +93,6 @@
         // --- Configuration ---
         const MUSIC_URL = "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=heavenly-harp-11346.mp3"; 
         
-        // UPDATED: Using functional URLs so the preview works. 
-        // NOTE: To use your local files, replace these URLs with your filenames (e.g., '1.png', 'papu.png').
         const IMAGES = [
             '1.png', 
             '2.png', 
@@ -104,8 +101,6 @@
             '5.png'
         ]; 
         
-        // UPDATED: Placeholder for the flying photo. 
-        // CHANGE THIS: Replace with "image_ff4826.png" or "papu.png" to use your uploaded image.
         const FLYING_PHOTO_SRC = "papu.png"; 
         
         const PALACE_IMG = "sc.png"; 
@@ -308,7 +303,33 @@
 
         // --- Views ---
 
-        const SplashView = ({ startJourney }) => (
+        const SplashView = ({ startJourney, skipToHome }) => {
+            const lastTapRef = useRef(0);
+            const tapCountRef = useRef(0);
+
+            // SECRET LOGIC: 3 Taps within 500ms of each other trigger skipping
+            const handleSecretTap = (e) => {
+                e.stopPropagation(); // Prevent affecting other clicks
+                const now = Date.now();
+                
+                // If the last tap was less than 500ms ago, increment count
+                if (now - lastTapRef.current < 500) {
+                    tapCountRef.current += 1;
+                } else {
+                    // Reset if too slow
+                    tapCountRef.current = 1;
+                }
+                
+                lastTapRef.current = now;
+
+                if (tapCountRef.current === 3) {
+                    console.log("Secret unlocked! Skipping to home...");
+                    skipToHome();
+                    tapCountRef.current = 0;
+                }
+            };
+
+            return (
             <motion.div 
                 className="flex flex-col items-center justify-center h-full text-center p-6 relative z-10 overflow-hidden"
                 initial={{ opacity: 0 }}
@@ -354,13 +375,16 @@
                         <Sparkles className="absolute top-2 right-2 text-[#AA771C] animate-pulse" size={16} />
                     </motion.div>
                 </motion.div>
+                
+                {/* THIS IS THE MARKED PLACE FOR SECRET TAP */}
                 <motion.div 
                     initial={{ y: -50, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.8, duration: 0.6, type: "spring" }}
-                    className="mb-4 relative z-30"
+                    className="mb-4 relative z-30 cursor-pointer select-none"
+                    onClick={handleSecretTap} 
                 >
-                    <h1 className="font-playfair text-4xl md:text-5xl font-bold tracking-tight mb-2">
+                    <h1 className="font-playfair text-4xl md:text-5xl font-bold tracking-tight mb-2 pointer-events-none">
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#996515] via-[#D4AF37] to-[#996515] drop-shadow-sm">Happy New Year</span>
                         <br />
                         <motion.span 
@@ -371,6 +395,7 @@
                         >My Wife</motion.span>
                     </h1>
                 </motion.div>
+                
                 <motion.p 
                     className="font-cormorant text-xl text-[#8a6d3b] italic tracking-wide mb-12 max-w-xs leading-relaxed relative z-30"
                     initial={{ opacity: 0, y: 20 }}
@@ -398,7 +423,8 @@
                     </motion.button>
                 </motion.div>
             </motion.div>
-        );
+            );
+        };
 
         const JourneyView = ({ setCurrentTab }) => {
             const [phase, setPhase] = useState(0); 
@@ -952,6 +978,16 @@
                     setIsPlaying(true);
                 }
             };
+            
+            // --- NEW: SECRET SKIP FUNCTION ---
+            const skipToHome = () => {
+                setCurrentTab('home');
+                if (audioRef.current) {
+                    audioRef.current.volume = 0.6;
+                    audioRef.current.play().catch(() => {});
+                    setIsPlaying(true);
+                }
+            };
 
             const enterHeavenSequence = () => {
                 setCurrentTab('heavenEntry');
@@ -1020,7 +1056,7 @@
                         <AnimatePresence mode='wait'>
                             {currentTab === 'splash' && (
                                 <motion.div key="splash" className="h-full" exit={{ opacity: 0 }}>
-                                    <SplashView startJourney={startJourney} />
+                                    <SplashView startJourney={startJourney} skipToHome={skipToHome} />
                                 </motion.div>
                             )}
                             {currentTab === 'journey' && (
